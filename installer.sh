@@ -3,7 +3,7 @@
 # ==============================================
 # SCRIPT : DOWNLOAD AND INSTALL Oscam_EMU #
 # =====================================================================================================================
-# Command: wget https://raw.githubusercontent.com/biko-73/OsCam_EMU/main/installer.sh -O - | /bin/sh #
+# Command: wget https://raw.githubusercontent.com/prof-abdo/OsCam_EMU/main/installer.sh -O - | /bin/sh #
 # =====================================================================================================================
 
 ########################################################################################################################
@@ -12,15 +12,15 @@
 
 PACKAGE_DIR='OsCam_EMU/main'
 
-MY_IPK="enigma2-plugin-softcams-oscam_11.714-emu-r798_all.ipk"
-MY_DEB="enigma2-plugin-softcams-oscam-osdreambox_11.714-emu-r798_all.deb"
+MY_IPK="enigma2-plugin-softcams-oscam_11.726-emu-r798_all.ipk"
+MY_DEB="enigma2-plugin-softcams-oscam-osdreambox_11.726.deb"
 
 ########################################################################################################################
 # Auto ... Do not change
 ########################################################################################################################
 
 # Decide : which package ?
-MY_MAIN_URL="https://raw.githubusercontent.com/biko-73/"
+MY_MAIN_URL="https://raw.githubusercontent.com/prof-abdo/"
 if which dpkg > /dev/null 2>&1; then
 	MY_FILE=$MY_DEB
 	MY_URL=$MY_MAIN_URL$PACKAGE_DIR'/'$MY_DEB
