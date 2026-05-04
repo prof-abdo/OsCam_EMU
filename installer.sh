@@ -12,7 +12,7 @@
 
 PACKAGE_DIR='OsCam_EMU/main'
 
-MY_IPK="enigma2-plugin-softcams-oscam_11.726-emu-r798_all.ipk"
+MY_IPK="enigma2-plugin-softcams-oscam-emu-levi45_11953-803_all.deb"
 MY_DEB="enigma2-plugin-softcams-oscam-emu-levi45_11953-803_all.ipk"
 
 ########################################################################################################################
