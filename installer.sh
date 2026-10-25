@@ -1,95 +1,109 @@
 #!/bin/sh
 
 # ==============================================
-# SCRIPT : DOWNLOAD AND INSTALL Oscam_EMU #
+# SCRIPT : DOWNLOAD AND INSTALL Oscam_EMU (11968) + NCam #
 # =====================================================================================================================
 # Command: wget https://raw.githubusercontent.com/prof-abdo/OsCam_EMU/main/installer.sh -O - | /bin/sh #
 # =====================================================================================================================
 
-########################################################################################################################
-# Plugin	... Enter Manually
-########################################################################################################################
+MY_OSCAM_IPK="enigma2-softcams-oscam-all-images_11968-emu-802-arm+mips_all.ipk"
+MY_OSCAM_DEB="enigma2-softcams-oscam-all-images_11968-emu-802-arm+mips_all.deb"
+MY_NCAM_IPK="enigma2-plugin-softcams-ncam_V15.8-r0_all.ipk"
+MY_NCAM_DEB="enigma2-plugin-softcams-ncam-osdreambox_V15.8-r0.deb"
 
-PACKAGE_DIR='OsCam_EMU/main'
+MY_URL="https://raw.githubusercontent.com/prof-abdo/OsCam_EMU/main"
 
-MY_IPK="enigma2-plugin-softcams-oscam-emu-levi45_11964-803_all.deb"
-MY_DEB="enigma2-plugin-softcams-oscam-emu-levi45_11964-803_all.ipk"
-
-########################################################################################################################
-# Auto ... Do not change
-########################################################################################################################
-
-# Decide : which package ?
-MY_MAIN_URL="https://raw.githubusercontent.com/prof-abdo/"
+# Correct extension mapping (old script had these swapped)
 if which dpkg > /dev/null 2>&1; then
-	MY_FILE=$MY_DEB
-	MY_URL=$MY_MAIN_URL$PACKAGE_DIR'/'$MY_DEB
+    OSCAM_FILE=$MY_OSCAM_DEB
+    NCAM_FILE=$MY_NCAM_DEB
 else
-	MY_FILE=$MY_IPK
-	MY_URL=$MY_MAIN_URL$PACKAGE_DIR'/'$MY_IPK
+    OSCAM_FILE=$MY_OSCAM_IPK
+    NCAM_FILE=$MY_NCAM_IPK
 fi
-MY_TMP_FILE="/tmp/"$MY_FILE
+
+install_pkg_file() {
+    FILE="$1"
+    if which dpkg > /dev/null 2>&1; then
+        dpkg -i --force-overwrite "$FILE" 2>&1
+    else
+        opkg install --force-reinstall --force-overwrite "$FILE" 2>&1
+    fi
+}
 
 echo ''
 echo '************************************************************'
 echo '**                         STARTED                        **'
 echo '************************************************************'
-echo "**                 Uploaded by: prof-abdo                   **"
-echo "**                                                          **"
+echo "**     OSCam 11968-emu-802 + NCam V15.8 - prof-abdo        **"
 echo "************************************************************"
 echo ''
 
-# Remove previous file (if any)
-rm -f $MY_TMP_FILE > /dev/null 2>&1
+# -- 1) OSCam 11968 : local copy first, else from repo -----------
+OSCAM_SRC=""
+for p in "/tmp/$OSCAM_FILE" "/tmp/enigma2-softcams-oscam-all-images_11968*.ipk" \
+         "/tmp/enigma2-softcams-oscam-all-images_11968*.deb" \
+         "/root/enigma2-softcams-oscam-all-images_11968*.ipk" \
+         "/root/enigma2-softcams-oscam-all-images_11968*.deb"; do
+    for cand in $p; do
+        [ -f "$cand" ] && OSCAM_SRC="$cand" && break 2
+    done
+done
 
-# Download package file
-MY_SEP='============================================================='
-echo $MY_SEP
-echo 'Downloading '$MY_FILE' ...'
-echo $MY_SEP
-echo ''
-wget -T 2 $MY_URL -P "/tmp/"
-
-# Check download
-if [ -f $MY_TMP_FILE ]; then
-	# Install
-	echo ''
-	echo $MY_SEP
-	echo 'Installation started'
-	echo $MY_SEP
-	echo ''
-	if which dpkg > /dev/null 2>&1; then
-		dpkg -i --force-overwrite $MY_TMP_FILE
-	else
-		opkg install --force-reinstall $MY_TMP_FILE
-	fi
-	MY_RESULT=$?
-
-	# Result
-	echo ''
-	echo ''
-	if [ $MY_RESULT -eq 0 ]; then
-		echo "   >>>>   SUCCESSFULLY INSTALLED   <<<<"
-		echo ''
-		echo "   >>>>         RESTARING         <<<<"
-		if which systemctl > /dev/null 2>&1; then
-			sleep 2; systemctl restart enigma2
-		else
-			init 4; sleep 4; init 3;
-		fi
-	else
-		echo "   >>>>   INSTALLATION FAILED !   <<<<"
-	fi;
-	echo ''
-	echo '**************************************************'
-	echo '**                   FINISHED                   **'
-	echo '**************************************************'
-	echo ''
-	exit 0
-else
-	echo ''
-	echo "Download failed !"
-	exit 1
+if [ -z "$OSCAM_SRC" ]; then
+    echo "Downloading $OSCAM_FILE ..."
+    wget -T 10 -q "$MY_URL/$OSCAM_FILE" -O "/tmp/$OSCAM_FILE"
+    [ -f "/tmp/$OSCAM_FILE" ] && OSCAM_SRC="/tmp/$OSCAM_FILE"
 fi
+
+if [ -f "$OSCAM_SRC" ]; then
+    echo "Installing OSCam 11968-emu-802 ..."
+    install_pkg_file "$OSCAM_SRC"
+    rm -f "/tmp/$OSCAM_FILE" > /dev/null 2>&1
+else
+    echo "Download failed !"
+fi
+
+# -- 2) NCam (kept as optional softcam) --------------------------
+echo ''
+echo "Downloading $NCAM_FILE ..."
+rm -f "/tmp/$NCAM_FILE" > /dev/null 2>&1
+wget -T 10 -q "$MY_URL/$NCAM_FILE" -O "/tmp/$NCAM_FILE"
+if [ -f "/tmp/$NCAM_FILE" ]; then
+    echo "Installing NCam V15.8 ..."
+    install_pkg_file "/tmp/$NCAM_FILE"
+    rm -f "/tmp/$NCAM_FILE" > /dev/null 2>&1
+else
+    echo "NCam download failed, skipping."
+fi
+
+# -- 3) OSCam stays the active/default softcam -------------------
+# NCam's postinst switches the default; put OSCam back on top.
+RESTORE=""
+for s in softcam.oscam softcam.oscam-master; do
+    [ -e "/etc/init.d/$s" ] && RESTORE="/etc/init.d/$s" && break
+done
+if [ -n "$RESTORE" ]; then
+    ln -sf "$RESTORE" /etc/init.d/softcam 2>/dev/null
+    echo ""
+    echo "Restored default softcam to $(basename "$RESTORE")."
+fi
+
+# -- Result ------------------------------------------------------
+if ls /usr/bin/oscam* > /dev/null 2>&1; then
+    echo ''
+    echo "   >>>>   SUCCESSFULLY INSTALLED   <<<<"
+    echo "   >>>>   OSCam active | NCam available in Softcam Menu <<<<"
+else
+    echo ''
+    echo "   >>>>   INSTALLATION FAILED !   <<<<"
+fi
+
+echo ''
+echo '**************************************************'
+echo '**                   FINISHED                   **'
+echo '**************************************************'
+
+exit 0
 
 # ------------------------------------------------------------------------------------------------------------
